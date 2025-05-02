@@ -3,7 +3,7 @@ package taller
 import scala.annotation.tailrec
 
 
-class AplicarMovimiento() {
+class  AplicarMovimiento() {
   type Vagon = Any
   type Tren = List[Vagon]
   type Estado = (Tren, Tren, Tren)
