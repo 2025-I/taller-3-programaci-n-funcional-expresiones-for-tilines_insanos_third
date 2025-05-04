@@ -75,6 +75,9 @@ class  AplicarMovimiento() {
   }
 ```
 ## **3. Casos de Prueba**
+### **Descripción de los casos de prueba**
+Los casos de prueba están diseñados para evaluar la función `aplicarMovimiento` en diferentes escenarios, incluyendo movimientos positivos y negativos, así como casos especiales. Cada prueba utiliza listas generadas aleatoriamente para simular diferentes estados de los trenes y verificar que la función se comporta como se espera.
+Fueron diseñados de tal manera en la que se haga uso de listas de diferentes tamaños y tipos de datos, asegurando que la función maneje correctamente los movimientos de vagones entre las listas `principal`, `uno` y `dos`, a demás se usan métodos aleatorios y tipos de datos, asi como otros métodos como `take`, `drop` y `++` para manipular las listas de manera eficiente.
 ```scala
 class AplicarMovimientoTest extends AnyFunSuite {
   val objAplicarMovimiento = new AplicarMovimiento()
@@ -184,7 +187,6 @@ class AplicarMovimientoTest extends AnyFunSuite {
     assert(e2 == e0)
   }
 }
-
 ```
 ---
 ## **4. Informe del proceso**
