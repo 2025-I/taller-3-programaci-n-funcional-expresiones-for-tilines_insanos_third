@@ -4,6 +4,7 @@ class  AplicarMovimiento {
   type Vagon = Any
   type Tren = List[Vagon]
   type Estado = (Tren, Tren, Tren)
+  type Maniobra = List[Movimiento]
 
   trait Movimiento
 
