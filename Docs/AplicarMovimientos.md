@@ -2,11 +2,11 @@
 
 ## 1. Introducción
 
-Este informe describe el funcionamiento de la función `AplicarMovimientos`, implementada en Scala. Esta función está diseñada para aplicar de forma secuencial una lista de movimientos sobre una estructura de datos del tipo `(Tren, Tren, Tren)`, representando el estado de un sistema ferroviario simulado. La función se implementa de forma funcional pura, utilizando recursión de cola, y permite observar paso a paso cómo se transforma el estado del sistema a medida que se aplican los movimientos. Se analiza su ejecución con un ejemplo no trivial, el comportamiento de la pila y se extraen conclusiones a partir de las pruebas realizadas.
+Este informe describe el funcionamiento de la función `aplicarMovimientos`, implementada en Scala. Dicha función aplica secuencialmente una lista de movimientos sobre una estructura de tipo `(Tren, Tren, Tren)`, que representa el estado de un sistema ferroviario simulado. Se implementa siguiendo principios de programación funcional pura, utilizando recursión de cola, y permite observar paso a paso la transformación del estado del sistema. Además, se detallan pruebas unitarias desarrolladas con `ScalaTest` y `JUnit`, que validan la robustez y escalabilidad de la función.
 
 ## 2. Función principal
 
-La función `aplicarMovimientos` toma un estado inicial `e` y una lista de movimientos `movs`, y devuelve una lista con todos los estados intermedios (incluyendo el inicial), aplicando cada movimiento secuencialmente.
+La función `aplicarMovimientos` toma un estado inicial `e` y una lista de movimientos `movs`, devolviendo una lista de todos los estados intermedios (incluido el inicial), aplicando cada movimiento en orden:
 
 ```scala
 def aplicarMovimientos(e: Estado, movs: List[Movimiento]): List[Estado] = {
@@ -24,56 +24,42 @@ def aplicarMovimientos(e: Estado, movs: List[Movimiento]): List[Estado] = {
 
 ## 3. Función auxiliar: `aplicarMovimiento`
 
-Esta función, definida en la clase base `AplicarMovimiento`, realiza la transformación de un estado individual mediante un solo `Movimiento`. Dependiendo del tipo de movimiento (`Uno(n)` o `Dos(n)`) y del signo de `n`, se mueven `n` vagones entre las listas `principal`, `uno` y `dos`.
+Esta función transforma un estado a partir de un solo movimiento. Según el tipo (`Uno(n)` o `Dos(n)`) y el signo de `n`, se mueven `n` vagones desde o hacia las pistas auxiliares.
 
 ```scala
 def aplicarMovimiento(e: Estado, m: Movimiento): Estado = {
   val (principal, uno, dos) = e
   m match {
     case Uno(n) if n > 0 =>
-      val movidos = for {
-        i <- (principal.length - n) until principal.length
-        if i >= 0
-      } yield principal(i)
-      (principal.take(principal.length - n), uno ++ movidos.toList, dos)
+      val movidos = principal.takeRight(n)
+      (principal.dropRight(n), uno ++ movidos, dos)
 
     case Uno(n) if n < 0 =>
       val movimientos = -n
-      val movidos = for {
-        i <- 0 until math.min(movimientos, uno.length)
-      } yield uno(i)
-      (principal ++ movidos.toList, uno.drop(math.min(movimientos, uno.length)), dos)
+      val movidos = uno.take(movimientos)
+      (principal ++ movidos, uno.drop(movimientos), dos)
 
     case Dos(n) if n > 0 =>
-      val movidos = for {
-        i <- (principal.length - n) until principal.length
-        if i >= 0
-      } yield principal(i)
-      (principal.take(principal.length - n), uno, dos ++ movidos.toList)
+      val movidos = principal.takeRight(n)
+      (principal.dropRight(n), uno, dos ++ movidos)
 
     case Dos(n) if n < 0 =>
       val movimientos = -n
-      val movidos = for {
-        i <- 0 until math.min(movimientos, dos.length)
-      } yield dos(i)
-      (principal ++ movidos.toList, uno, dos.drop(math.min(movimientos, dos.length)))
+      val movidos = dos.take(movimientos)
+      (principal ++ movidos, uno, dos.drop(movimientos))
 
-    case Uno(0) => e
-    case Dos(0) => e
+    case Uno(0) | Dos(0) => e
   }
 }
 ```
 
-## 4. Funcionamiento del algoritmo
+## 4. Ejemplo de funcionamiento
 
-**Caso de prueba:**
+**Caso:**  
+Estado inicial: `(List("A", "B", "C", "D", "E"), Nil, Nil)`  
+Movimientos: `List(Uno(2), Dos(1), Uno(-1), Dos(-1))`
 
-```scala
-val estadoInicial: Estado = (List("A", "B", "C", "D", "E"), Nil, Nil)
-val movimientos = List(Uno(2), Dos(1), Uno(-1), Dos(-1))
-```
-
-**Iteración y evolución del estado:**
+**Estados intermedios:**
 
 | Iteración | Movimiento   | principal      | uno         | dos         |
 |-----------|--------------|----------------|-------------|-------------|
@@ -83,45 +69,43 @@ val movimientos = List(Uno(2), Dos(1), Uno(-1), Dos(-1))
 | 3         | Uno(-1)      | [A, B, D]       | [E]         | [C]         |
 | 4         | Dos(-1)      | [A, B, D, C]    | [E]         | []          |
 
-## 5. Estado de la pila de llamadas
+## 5. Estado de la pila
 
-```scala
-aplicarMovimientosAux([Uno(2), Dos(1), Uno(-1), Dos(-1)], [estado0])
-└── aplicarMovimientosAux([Dos(1), Uno(-1), Dos(-1)], [estado0, estado1])
-    └── aplicarMovimientosAux([Uno(-1), Dos(-1)], [estado0, estado1, estado2])
-        └── aplicarMovimientosAux([Dos(-1)], [estado0, estado1, estado2, estado3])
-            └── aplicarMovimientosAux([], [estado0, ..., estado4])
+Gracias al uso de recursión de cola, la función `aplicarMovimientos` evita el crecimiento excesivo de la pila. Todas las llamadas se ejecutan de forma lineal en espacio constante para la pila:
+
+```text
+aplicarMovimientosAux(movs, List(e0))
+→ aplicarMovimientosAux(tail, acc :+ nuevoEstado)
+→ …
 ```
 
-## 6. Conclusiones basadas en las pruebas de software
+## 6. Pruebas unitarias
 
-Las pruebas unitarias fueron implementadas usando `ScalaTest` y `JUnitRunner`. Se consideraron distintas categorías de tamaño y combinación de movimientos:
+Las siguientes pruebas fueron ejecutadas usando `ScalaTest` con `JUnitRunner`. Se utilizaron listas con caracteres repetidos para facilitar la verificación estructural:
 
-| Tipo de prueba | Descripción                                                  | Tamaño     | Observaciones                                                  |
-|----------------|--------------------------------------------------------------|------------|----------------------------------------------------------------|
-| Juguete 1      | 10 vagones, 10 `Uno(1)`                                      | 10 movs    | 11 estados generados. Flujo correcto.                         |
-| Juguete 2      | 10 vagones, `Uno(5)` + `Dos(5)`                              | 2 movs     | Finaliza con principal vacío y mitad en uno y dos.            |
-| Pequeña 1      | 100 vagones, 100 `Uno(1)`                                    | 100 movs   | 101 estados, comportamiento estable.                          |
-| Pequeña 2      | 100 vagones, 50 `Uno(2)` + 25 `Dos(2)`                       | 75 movs    | Lista de estados crece correctamente hasta 76.                |
-| Mediana 1      | 500 vagones, 500 `Dos(-1)`                                   | 500 movs   | Cada uno mueve un vagón del dos al principal sin errores.     |
-| Mediana 2      | 250 `Uno(2)` + 250 `Dos(2)` con 500 vagones                  | 500 movs   | Transiciones correctas, sin pérdida de datos.                 |
-| Grande 1       | 1000 vagones, 1000 `Uno(1)`                                  | 1000 movs  | Procesa sin desbordamientos, lista resultante de 1001.        |
-| Grande 2       | 500 `Uno(2)` + 500 `Dos(2)` con 1000 vagones                 | 1000 movs  | Ejecución eficiente y sin fallos con lista resultante de 1001.|
+| Nombre de prueba             | Descripción                                       | Tamaño    | Resultado esperado                            |
+|-----------------------------|---------------------------------------------------|-----------|-----------------------------------------------|
+| Tamaño 20                   | 20 veces `Uno(1)`                                 | 20 movs   | 21 estados generados                          |
+| Tamaño 100                  | 50 `Uno(2)` + 25 `Dos(2)`                         | 75 movs   | Estado final: principal vacío                 |
+| Tamaño 1000                 | Alternancia de `Uno(1)` y `Dos(1)`                | 1000 movs | 1001 estados generados                        |
+| Tamaño 5000                 | 2500 `Uno(2)` + 2500 `Dos(2)`                     | 5000 movs | Estado final: principal vacío                 |
+| Tamaño 10000                | 10000 veces `Dos(-1)`                             | 10000 movs| 10001 estados generados                       |
 
 **Verificaciones realizadas:**
 
-- Se comprobó que el número de estados generados es correcto: `movs.length + 1`.
-- Que los vagones se distribuyen coherentemente entre las listas.
-- No hubo errores de ejecución ni desbordamientos en listas grandes.
-- Todas las pruebas pasaron satisfactoriamente usando `assert(...)`.
+- Conteo de estados: `movs.length + 1`
+- Estado final coherente: sin pérdida de elementos
+- Distribución correcta entre pistas
+- Comportamiento estable con grandes volúmenes de datos
+- No se produjeron errores ni desbordamientos
 
 ## 7. Conclusión
 
-La función `aplicarMovimientos` implementada en Scala cumple con todos los requerimientos funcionales:
+La función `aplicarMovimientos` es:
 
-- Utiliza recursión de cola correctamente, lo que permite escalabilidad.
-- Respeta el paradigma funcional al evitar mutaciones.
-- Es robusta frente a entradas variadas y extensas.
-- Devuelve un historial completo de estados, lo que permite trazabilidad y depuración.
+- **Escalable:** gracias a la recursión de cola, maneja listas de hasta 10,000 elementos sin problemas.
+- **Funcionalmente pura:** no usa mutaciones ni efectos secundarios.
+- **Correcta y trazable:** cada estado intermedio queda registrado.
+- **Robusta:** pasó todas las pruebas automatizadas con distintos patrones de entrada.
 
-Las pruebas automatizadas demostraron que se comporta de forma correcta y eficiente para casos pequeños, medianos y grandes, incluyendo patrones repetitivos y combinaciones variadas de movimientos. El diseño es modular y extensible, apto para escenarios complejos de simulación ferroviaria.
+Esto la hace ideal para simulaciones de sistemas ferroviarios o similares que requieren un historial completo de transformación de estados.
